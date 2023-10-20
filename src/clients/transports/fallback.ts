@@ -76,7 +76,7 @@ export type FallbackTransportConfig = {
 }
 
 export type FallbackTransport = Transport<
-  'fallback',
+  'fallback' | 'webSocket',
   {
     onResponse: (fn: OnResponseFn) => void
     transports: ReturnType<Transport>[]
@@ -100,6 +100,12 @@ export function fallback(
     let transports = transports_
 
     let onResponse: OnResponseFn = () => {}
+
+    const type = transports
+      .map(t => t({chain}))
+      .every((t) => t.config.type === 'webSocket')
+      ? 'webSocket'
+      : 'fallback';
 
     const transport = createTransport(
       {
@@ -147,11 +153,41 @@ export function fallback(
         },
         retryCount,
         retryDelay,
-        type: 'fallback',
+        type,
       },
       {
         onResponse: (fn: OnResponseFn) => (onResponse = fn),
-        transports: transports.map((fn) => fn({ chain, retryCount: 0 })),
+        transports: transports.map((fn) => fn({ chain })),
+        getSocket: () => {
+          for (const fn of transports) {
+            const transport = fn({ chain })
+            if (transport.value && 'getSocket' in transport.value) {
+              try {
+                return transport.value.getSocket()
+              } catch (err) {
+                // If the error is deterministic, we don't need to fall back.
+                // So throw the error.
+                if (isDeterministicError(err as Error)) throw err
+                // Otherwise, try the next fallback.
+              }
+            }
+          }
+        },
+        async subscribe(args: any) {
+          for(const fn of transports) {
+            const transport = fn({ chain })
+            if (transport.value && 'subscribe' in transport.value) {
+              try {
+                return await transport.value.subscribe(args)
+              } catch (err) {
+                // If the error is deterministic, we don't need to fall back.
+                // So throw the error.
+                if (isDeterministicError(err as Error)) throw err
+                // Otherwise, try the next fallback.
+              }
+            }
+          }
+        }
       },
     )
 
