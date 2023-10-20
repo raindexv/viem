@@ -5,7 +5,13 @@ import {
 } from '../../errors/transport.js'
 import type { ErrorType } from '../../errors/utils.js'
 import type { Hash } from '../../types/misc.js'
-import { type RpcResponse, getSocket, rpc } from '../../utils/rpc.js'
+import {
+  type RpcResponse,
+  type Socket,
+  getSocket,
+  rpc,
+  subscribeSocket,
+} from '../../utils/rpc.js'
 import {
   type CreateTransportErrorType,
   type Transport,
@@ -19,7 +25,6 @@ type WebSocketTransportSubscribeParameters = {
 }
 
 type WebSocketTransportSubscribeReturnType = {
-  subscriptionId: Hash
   unsubscribe: () => Promise<RpcResponse<boolean>>
 }
 
@@ -104,42 +109,59 @@ export function webSocket(
           return getSocket(url_)
         },
         async subscribe({ params, onData, onError }: any) {
-          const socket = await getSocket(url_)
-          const { result: subscriptionId } = await new Promise<any>(
-            (resolve, reject) =>
-              rpc.webSocket(socket, {
-                body: {
-                  method: 'eth_subscribe',
-                  params,
-                },
-                onResponse(response) {
-                  if (response.error) {
-                    reject(response.error)
-                    onError?.(response.error)
-                    return
-                  }
+          let subscriptionSocket: Socket | undefined
+          let subscriptionId: Hash | undefined
 
-                  if (typeof response.id === 'number') {
-                    resolve(response)
-                    return
-                  }
-                  if (response.method !== 'eth_subscription') return
-                  onData(response.params)
-                },
-              }),
-          )
+          // When socket is created (or recreated), we need to subscribe RPC
+          const unsubscribeSocket = await subscribeSocket(url_, (socket) => {
+            subscriptionSocket = socket
+            subscriptionId = undefined
+
+            rpc.webSocket(socket, {
+              body: {
+                method: 'eth_subscribe',
+                params,
+              },
+              onResponse(response) {
+                if (response.error) {
+                  onError?.(response.error)
+                  return
+                }
+
+                if (typeof response.id === 'number') {
+                  subscriptionId = response.result
+                  return
+                }
+                if (response.method !== 'eth_subscription') return
+                onData(response.params)
+              },
+            })
+
+            return () => {
+              if (subscriptionSocket === socket) {
+                subscriptionSocket = undefined
+                subscriptionId = undefined
+              }
+            }
+          })
+
           return {
-            subscriptionId,
             async unsubscribe() {
-              return new Promise<any>((resolve) =>
-                rpc.webSocket(socket, {
+              // unsubscribe RPC (if socket is open)
+              await new Promise<any>((resolve) => {
+                if (!subscriptionSocket || !subscriptionId) {
+                  return resolve('no subscriptionSocket or subscriptionId')
+                }
+                rpc.webSocket(subscriptionSocket, {
                   body: {
                     method: 'eth_unsubscribe',
                     params: [subscriptionId],
                   },
                   onResponse: resolve,
-                }),
-              )
+                })
+              })
+              // unsubscribe from socket creation
+              return await unsubscribeSocket()
             },
           }
         },
