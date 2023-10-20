@@ -168,6 +168,11 @@ export const socketCallbacks = /*#__PURE__*/ new Map<
   Set<(socket: Socket) => () => void>
 >()
 
+export const socketCreationPromises = /*#__PURE__*/ new Map<
+  string,
+  Promise<Socket>
+>()
+
 export async function subscribeSocket(
   url: string,
   callback: (socket: Socket) => () => void,
@@ -208,6 +213,13 @@ export async function getSocket(url: string) {
 }
 
 async function newSocket(url: string) {
+  // If the socket is already being created, return the promise.
+  let socketCreationPromise = socketCreationPromises.get(url)
+  if (socketCreationPromise) {
+    console.log(`Socket creation already in progress for ${url}`)
+    return socketCreationPromise
+  }
+
   const { schedule } = createBatchScheduler<undefined, [Socket]>({
     id: url,
     fn: async () => {
@@ -232,7 +244,9 @@ async function newSocket(url: string) {
         if (!isSubscription) cache.delete(id)
       }
       const onClose = () => {
-        console.log(`Socket closed for ${url}`)
+        console.log(
+          `Socket closed for ${url}, with ${unsubscribeCallbacks.length} callbacks`,
+        )
 
         socketsCache.delete(url)
         webSocket.removeEventListener('close', onClose)
@@ -288,8 +302,15 @@ async function newSocket(url: string) {
     },
   })
 
-  const [_, [socket_]] = await schedule()
-  return socket_
+  console.log(`Creating new socket for ${url}`)
+  socketCreationPromise = schedule().then(([_, [socket_]]) => socket_)
+  socketCreationPromises.set(url, socketCreationPromise)
+  try {
+    return await socketCreationPromise
+  } finally {
+    socketCreationPromises.delete(url)
+    console.log(`Socket creation completed for ${url}`)
+  }
 }
 
 export type WebSocketOptions = {
