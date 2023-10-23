@@ -361,7 +361,7 @@ export function watchEvent<
         onError?.(err as Error)
       }
     })()
-    return unsubscribe
+    return () => unsubscribe()
   }
 
   return enablePolling ? pollEvent() : subscribeEvent()

@@ -166,7 +166,7 @@ export function watchBlockNumber<
         onError?.(err as Error)
       }
     })()
-    return unsubscribe
+    return () => unsubscribe()
   }
 
   return enablePolling ? pollBlockNumber() : subscribeBlockNumber()

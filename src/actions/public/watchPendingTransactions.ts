@@ -176,7 +176,7 @@ export function watchPendingTransactions<
         onError?.(err as Error)
       }
     })()
-    return unsubscribe
+    return () => unsubscribe()
   }
 
   return enablePolling

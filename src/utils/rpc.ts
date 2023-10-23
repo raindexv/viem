@@ -157,15 +157,18 @@ type CallbackMap = Map<Id, CallbackFn>
 export type Socket = WebSocket & {
   requests: CallbackMap
   subscriptions: CallbackMap
-  unsubscribeCallbacks: (() => void)[]
+  closeCallbacks: Map<SocketCallback, SocketCloseCallback>
 }
 
 export type GetSocketErrorType = CreateBatchSchedulerErrorType | ErrorType
 
+type SocketCallback = (socket: Socket) => SocketCloseCallback
+type SocketCloseCallback = () => any
+
 export const socketsCache = /*#__PURE__*/ new Map<string, Socket>()
 export const socketCallbacks = /*#__PURE__*/ new Map<
   string,
-  Set<(socket: Socket) => () => void>
+  Set<SocketCallback>
 >()
 
 export const socketCreationPromises = /*#__PURE__*/ new Map<
@@ -175,8 +178,8 @@ export const socketCreationPromises = /*#__PURE__*/ new Map<
 
 export async function subscribeSocket(
   url: string,
-  callback: (socket: Socket) => () => void,
-): Promise<() => Promise<any>> {
+  callback: SocketCallback,
+): Promise<() => any> {
   // Add the callback to the list of callbacks to invoke when a new socket is created.
   let callbacks = socketCallbacks.get(url)
   if (!callbacks) {
@@ -185,15 +188,19 @@ export async function subscribeSocket(
   }
   callbacks.add(callback)
 
-  const unsubscribe = async () => {
+  const unsubscribe = () => {
+    // remove socket creation callback
     callbacks?.delete(callback)
+    // remove socket close callback
+    const socket = socketsCache.get(url)
+    socket?.closeCallbacks.delete(callback)
   }
 
   const socket = socketsCache.get(url)
   if (socket) {
     // If the socket already exists, invoke the callback immediately.
-    const consumerUnsubscribe = callback(socket)
-    socket.unsubscribeCallbacks.push(consumerUnsubscribe)
+    const closeCallback = callback(socket)
+    socket.closeCallbacks.set(callback, closeCallback)
     return unsubscribe
   } else {
     // Otherwise, create a new socket - which will invoke the callback.
@@ -216,7 +223,7 @@ async function newSocket(url: string) {
   // If the socket is already being created, return the promise.
   let socketCreationPromise = socketCreationPromises.get(url)
   if (socketCreationPromise) {
-    console.log(`Socket creation already in progress for ${url}`)
+    // console.log(`Socket creation already in progress for ${url}`)
     return socketCreationPromise
   }
 
@@ -231,8 +238,8 @@ async function newSocket(url: string) {
       // Set up a cache for subscriptions (eth_subscribe).
       const subscriptions = new Map<Id, CallbackFn>()
 
-      // Set up a cache for unsubscribe callbacks.
-      const unsubscribeCallbacks: (() => void)[] = []
+      // Set up a cache for close callbacks.
+      const closeCallbacks = new Map<SocketCallback, SocketCloseCallback>()
 
       const onMessage: (event: MessageEvent) => void = ({ data }) => {
         const message: RpcResponse = JSON.parse(data as string)
@@ -244,15 +251,15 @@ async function newSocket(url: string) {
         if (!isSubscription) cache.delete(id)
       }
       const onClose = () => {
-        console.log(
-          `Socket closed for ${url}, with ${unsubscribeCallbacks.length} callbacks`,
-        )
+        // console.log(
+        //   `Socket closed for ${url}, with ${closeCallbacks.size} callbacks`,
+        // )
 
         socketsCache.delete(url)
         webSocket.removeEventListener('close', onClose)
         webSocket.removeEventListener('message', onMessage)
-        for (const unsubscribeCallback of unsubscribeCallbacks) {
-          unsubscribeCallback()
+        for (const closeCallback of closeCallbacks.values()) {
+          closeCallback()
         }
 
         // TODO: Reconnect the socket.
@@ -277,7 +284,7 @@ async function newSocket(url: string) {
       const socket = Object.assign(webSocket, {
         requests,
         subscriptions,
-        unsubscribeCallbacks,
+        closeCallbacks,
       })
 
       // Invoke all callbacks to notify that a new socket is created.
@@ -285,31 +292,31 @@ async function newSocket(url: string) {
       const callbacks = socketCallbacks.get(url)
       if (callbacks) {
         for (const callback of callbacks) {
-          const unsubscribeCallback = callback(socket)
-          unsubscribeCallbacks.push(unsubscribeCallback)
+          const closeCallback = callback(socket)
+          closeCallbacks.set(callback, closeCallback)
         }
       }
 
       socketsCache.set(url, socket)
 
-      console.log(
-        `New socket created for ${url}, with ${
-          socketCallbacks.get(url)?.size
-        } callbacks`,
-      )
+      // console.log(
+      //   `New socket created for ${url}, with ${
+      //     socketCallbacks.get(url)?.size
+      //   } callbacks`,
+      // )
 
       return [socket]
     },
   })
 
-  console.log(`Creating new socket for ${url}`)
+  // console.log(`Creating new socket for ${url}`)
   socketCreationPromise = schedule().then(([_, [socket_]]) => socket_)
   socketCreationPromises.set(url, socketCreationPromise)
   try {
     return await socketCreationPromise
   } finally {
     socketCreationPromises.delete(url)
-    console.log(`Socket creation completed for ${url}`)
+    // console.log(`Socket creation completed for ${url}`)
   }
 }
 

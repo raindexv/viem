@@ -109,10 +109,12 @@ export function webSocket(
           return getSocket(url_)
         },
         async subscribe({ params, onData, onError }: any) {
-          let subscriptionSocket: Socket | undefined
-          let subscriptionId: Hash | undefined
+          let active = true
 
-          // When socket is created (or recreated), we need to subscribe RPC
+          let subscriptionSocket: Socket | undefined = undefined
+          let subscriptionId: Hash | undefined = undefined
+
+          // When socket is created (or recreated), send eth_subscribe RPC & listen for further responses
           const unsubscribeSocket = await subscribeSocket(url_, (socket) => {
             subscriptionSocket = socket
             subscriptionId = undefined
@@ -130,6 +132,14 @@ export function webSocket(
 
                 if (typeof response.id === 'number') {
                   subscriptionId = response.result
+
+                  // if consumer unsubscribes before subscription ID is received
+                  // then cleanup immediately
+                  if (!active) {
+                    cleanup().catch((error) => {
+                      onError?.(error)
+                    })
+                  }
                   return
                 }
                 if (response.method !== 'eth_subscription') return
@@ -137,6 +147,7 @@ export function webSocket(
               },
             })
 
+            // on socket closed
             return () => {
               if (subscriptionSocket === socket) {
                 subscriptionSocket = undefined
@@ -145,23 +156,29 @@ export function webSocket(
             }
           })
 
-          return {
-            async unsubscribe() {
-              // unsubscribe RPC (if socket is open)
-              await new Promise<any>((resolve) => {
-                if (!subscriptionSocket || !subscriptionId) {
-                  return resolve('no subscriptionSocket or subscriptionId')
-                }
-                rpc.webSocket(subscriptionSocket, {
-                  body: {
-                    method: 'eth_unsubscribe',
-                    params: [subscriptionId],
-                  },
-                  onResponse: resolve,
-                })
+          // unsubscribe from socket creation & send eth_unsubscribe RPC
+          const cleanup = async () => {
+            unsubscribeSocket()
+            return new Promise<any>((resolve) => {
+              if (subscriptionId === undefined) return
+              if (subscriptionSocket === undefined) return
+              if (subscriptionSocket.readyState !== subscriptionSocket.OPEN)
+                return
+              rpc.webSocket(subscriptionSocket, {
+                body: {
+                  method: 'eth_unsubscribe',
+                  params: [subscriptionId],
+                },
+                onResponse: resolve,
               })
-              // unsubscribe from socket creation
-              return await unsubscribeSocket()
+            })
+          }
+
+          return {
+            unsubscribe() {
+              active = false
+
+              return cleanup()
             },
           }
         },
