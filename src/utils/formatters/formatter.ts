@@ -10,7 +10,7 @@ export function defineFormatter<TType extends string, TParameters, TReturnType>(
   return <
     TOverrideParameters,
     TOverrideReturnType,
-    TExclude extends (keyof TParameters)[] = [],
+    TExclude extends (keyof TParameters | keyof TOverrideParameters)[] = [],
   >({
     exclude,
     format: overrides,
@@ -31,7 +31,7 @@ export function defineFormatter<TType extends string, TParameters, TReturnType>(
           ...formatted,
           ...overrides(args),
         } as Prettify<Assign<TReturnType, TOverrideReturnType>> & {
-          [K in TExclude[number]]: never
+          [_key in TExclude[number]]: never
         }
       },
       type,

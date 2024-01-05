@@ -9,13 +9,14 @@ import type { Prettify } from '../../types/utils.js'
 import {
   type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from '../../utils/chain.js'
+} from '../../utils/chain/getChainContractAddress.js'
 import { type ToHexErrorType, toHex } from '../../utils/encoding/toHex.js'
 import { isNullUniversalResolverError } from '../../utils/ens/errors.js'
 import {
   type PacketToBytesErrorType,
   packetToBytes,
 } from '../../utils/ens/packetToBytes.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type ReadContractErrorType,
   type ReadContractParameters,
@@ -44,7 +45,7 @@ export type GetEnsNameErrorType =
  * Gets primary name for specified address.
  *
  * - Docs: https://viem.sh/docs/ens/actions/getEnsName.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/ens
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/ens
  *
  * Calls `reverse(bytes)` on ENS Universal Resolver Contract to "reverse resolve" the address to the primary ENS name.
  *
@@ -64,7 +65,7 @@ export type GetEnsNameErrorType =
  * const ensName = await getEnsName(client, {
  *   address: '0xd2135CfB216b74109775236E36d4b433F1DF507B',
  * })
- * // 'wagmi-dev.eth'
+ * // 'wevm.eth'
  */
 export async function getEnsName<TChain extends Chain | undefined>(
   client: Client<Transport, TChain>,
@@ -91,7 +92,11 @@ export async function getEnsName<TChain extends Chain | undefined>(
 
   const reverseNode = `${address.toLowerCase().substring(2)}.addr.reverse`
   try {
-    const res = await readContract(client, {
+    const [name, resolvedAddress] = await getAction(
+      client,
+      readContract,
+      'readContract',
+    )({
       address: universalResolverAddress,
       abi: universalResolverReverseAbi,
       functionName: 'reverse',
@@ -99,7 +104,8 @@ export async function getEnsName<TChain extends Chain | undefined>(
       blockNumber,
       blockTag,
     })
-    return res[0]
+    if (address.toLowerCase() !== resolvedAddress.toLowerCase()) return null
+    return name
   } catch (err) {
     if (isNullUniversalResolverError(err, 'reverse')) return null
     throw err

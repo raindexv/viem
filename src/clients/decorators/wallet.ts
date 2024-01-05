@@ -105,7 +105,7 @@ export type WalletActions<
    * Deploys a contract to the network, given bytecode and constructor arguments.
    *
    * - Docs: https://viem.sh/docs/contract/deployContract.html
-   * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/contracts/deploying-contracts
+   * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/contracts/deploying-contracts
    *
    * @param args - {@link DeployContractParameters}
    * @returns The [Transaction](https://viem.sh/docs/glossary/terms.html#transaction) hash. {@link DeployContractReturnType}
@@ -128,7 +128,7 @@ export type WalletActions<
    */
   deployContract: <
     const TAbi extends Abi | readonly unknown[],
-    TChainOverride extends Chain | undefined,
+    TChainOverride extends Chain | undefined = undefined,
   >(
     args: DeployContractParameters<TAbi, TChain, TAccount, TChainOverride>,
   ) => Promise<DeployContractReturnType>
@@ -228,7 +228,9 @@ export type WalletActions<
    *   value: 1n,
    * })
    */
-  prepareTransactionRequest: <TChainOverride extends Chain | undefined,>(
+  prepareTransactionRequest: <
+    TChainOverride extends Chain | undefined = undefined,
+  >(
     args: PrepareTransactionRequestParameters<TChain, TAccount, TChainOverride>,
   ) => Promise<PrepareTransactionRequestReturnType>
   /**
@@ -309,7 +311,7 @@ export type WalletActions<
    * Creates, signs, and sends a new transaction to the network.
    *
    * - Docs: https://viem.sh/docs/actions/wallet/sendTransaction.html
-   * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/transactions/sending-transactions
+   * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/transactions/sending-transactions
    * - JSON-RPC Methods:
    *   - JSON-RPC Accounts: [`eth_sendTransaction`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction)
    *   - Local Accounts: [`eth_sendRawTransaction`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction)
@@ -347,7 +349,7 @@ export type WalletActions<
    *   value: 1000000000000000000n,
    * })
    */
-  sendTransaction: <TChainOverride extends Chain | undefined>(
+  sendTransaction: <TChainOverride extends Chain | undefined = undefined>(
     args: SendTransactionParameters<TChain, TAccount, TChainOverride>,
   ) => Promise<SendTransactionReturnType>
   /**
@@ -439,7 +441,7 @@ export type WalletActions<
    * })
    * const signature = await client.signTransaction(request)
    */
-  signTransaction: <TChainOverride extends Chain | undefined,>(
+  signTransaction: <TChainOverride extends Chain | undefined = undefined>(
     args: SignTransactionParameters<TChain, TAccount, TChainOverride>,
   ) => Promise<SignTransactionReturnType>
   /**
@@ -594,7 +596,7 @@ export type WalletActions<
    * Executes a write function on a contract.
    *
    * - Docs: https://viem.sh/docs/contract/writeContract.html
-   * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/contracts/writing-to-contracts
+   * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/contracts/writing-to-contracts
    *
    * A "write" function on a Solidity contract modifies the state of the blockchain. These types of functions require gas to be executed, and hence a [Transaction](https://viem.sh/docs/glossary/terms.html) is needed to be broadcast in order to change the state.
    *
@@ -640,7 +642,7 @@ export type WalletActions<
   writeContract: <
     const TAbi extends Abi | readonly unknown[],
     TFunctionName extends string,
-    TChainOverride extends Chain | undefined,
+    TChainOverride extends Chain | undefined = undefined,
   >(
     args: WriteContractParameters<
       TAbi,

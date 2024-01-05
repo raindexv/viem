@@ -15,13 +15,22 @@ export {
 } from './ccip.js'
 
 export {
-  type AssertCurrentChainParameters,
   type AssertCurrentChainErrorType,
-  type GetChainContractAddressErrorType,
+  type AssertCurrentChainParameters,
   assertCurrentChain,
-  defineChain,
+} from './chain/assertCurrentChain.js'
+export { defineChain } from './chain/defineChain.js'
+export {
+  type ExtractChainErrorType,
+  type ExtractChainParameters,
+  type ExtractChainReturnType,
+  extractChain,
+} from './chain/extractChain.js'
+export {
+  type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from './chain.js'
+} from './chain/getChainContractAddress.js'
+
 export { arrayRegex, bytesRegex, integerRegex } from './regex.js'
 
 export {
@@ -349,6 +358,8 @@ export {
 } from './hash/getFunctionSelector.js'
 export { type IsHashErrorType, isHash } from './hash/isHash.js'
 export { type Keccak256ErrorType, keccak256 } from './hash/keccak256.js'
+export { type Sha256ErrorType, sha256 } from './hash/sha256.js'
+export { type Ripemd160ErrorType, ripemd160 } from './hash/ripemd160.js'
 export {
   type HashDomainErrorType,
   type HashTypedDataParameters,

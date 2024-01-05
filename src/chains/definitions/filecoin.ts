@@ -1,4 +1,4 @@
-import { defineChain } from '../../utils/chain.js'
+import { defineChain } from '../../utils/chain/defineChain.js'
 
 export const filecoin = /*#__PURE__*/ defineChain({
   id: 314,
@@ -18,5 +18,11 @@ export const filecoin = /*#__PURE__*/ defineChain({
     filscan: { name: 'Filscan', url: 'https://filscan.io' },
     filscout: { name: 'Filscout', url: 'https://filscout.io/en' },
     glif: { name: 'Glif', url: 'https://explorer.glif.io' },
+  },
+  contracts: {
+    multicall3: {
+      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
+      blockCreated: 3328594,
+    },
   },
 })

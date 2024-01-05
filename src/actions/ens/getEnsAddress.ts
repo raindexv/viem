@@ -20,7 +20,7 @@ import {
 import {
   type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from '../../utils/chain.js'
+} from '../../utils/chain/getChainContractAddress.js'
 import { type TrimErrorType, trim } from '../../utils/data/trim.js'
 import { type ToHexErrorType, toHex } from '../../utils/encoding/toHex.js'
 import { isNullUniversalResolverError } from '../../utils/ens/errors.js'
@@ -29,6 +29,7 @@ import {
   type PacketToBytesErrorType,
   packetToBytes,
 } from '../../utils/ens/packetToBytes.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type ReadContractParameters,
   readContract,
@@ -61,7 +62,7 @@ export type GetEnsAddressErrorType =
  * Gets address for ENS name.
  *
  * - Docs: https://viem.sh/docs/ens/actions/getEnsAddress.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/ens
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/ens
  *
  * Calls `resolve(bytes, bytes)` on ENS Universal Resolver Contract.
  *
@@ -81,11 +82,11 @@ export type GetEnsAddressErrorType =
  *   transport: http(),
  * })
  * const ensAddress = await getEnsAddress(client, {
- *   name: normalize('wagmi-dev.eth'),
+ *   name: normalize('wevm.eth'),
  * })
  * // '0xd2135CfB216b74109775236E36d4b433F1DF507B'
  */
-export async function getEnsAddress<TChain extends Chain | undefined,>(
+export async function getEnsAddress<TChain extends Chain | undefined>(
   client: Client<Transport, TChain>,
   {
     blockNumber,
@@ -118,7 +119,11 @@ export async function getEnsAddress<TChain extends Chain | undefined,>(
         : { args: [namehash(name)] }),
     })
 
-    const res = await readContract(client, {
+    const res = await getAction(
+      client,
+      readContract,
+      'readContract',
+    )({
       address: universalResolverAddress,
       abi: universalResolverResolveAbi,
       functionName: 'resolve',

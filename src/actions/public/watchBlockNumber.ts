@@ -4,6 +4,7 @@ import type { ErrorType } from '../../errors/utils.js'
 import type { Chain } from '../../types/chain.js'
 import type { GetTransportConfig } from '../../types/transport.js'
 import { hexToBigInt } from '../../utils/encoding/fromHex.js'
+import { getAction } from '../../utils/getAction.js'
 import { observe } from '../../utils/observe.js'
 import { type PollErrorType, poll } from '../../utils/poll.js'
 import { stringify } from '../../utils/stringify.js'
@@ -55,7 +56,7 @@ export type WatchBlockNumberErrorType = PollErrorType | ErrorType
  * Watches and returns incoming block numbers.
  *
  * - Docs: https://viem.sh/docs/actions/public/watchBlockNumber.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/blocks/watching-blocks
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/blocks/watching-blocks
  * - JSON-RPC Methods:
  *   - When `poll: true`, calls [`eth_blockNumber`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber) on a polling interval.
  *   - When `poll: false` & WebSocket Transport, uses a WebSocket subscription via [`eth_subscribe`](https://docs.alchemy.com/reference/eth-subscribe-polygon) and the `"newHeads"` event.
@@ -108,7 +109,11 @@ export function watchBlockNumber<
       poll(
         async () => {
           try {
-            const blockNumber = await getBlockNumber(client, { cacheTime: 0 })
+            const blockNumber = await getAction(
+              client,
+              getBlockNumber,
+              'getBlockNumber',
+            )({ cacheTime: 0 })
 
             if (prevBlockNumber) {
               // If the current block number is the same as the previous,

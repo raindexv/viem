@@ -22,7 +22,7 @@ import type { RequestErrorType } from '../../utils/buildRequest.js'
 import {
   type AssertCurrentChainErrorType,
   assertCurrentChain,
-} from '../../utils/chain.js'
+} from '../../utils/chain/assertCurrentChain.js'
 import {
   type GetTransactionErrorReturnType,
   getTransactionError,
@@ -32,6 +32,7 @@ import {
   type FormattedTransactionRequest,
   formatTransactionRequest,
 } from '../../utils/formatters/transactionRequest.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type AssertRequestErrorType,
   type AssertRequestParameters,
@@ -79,7 +80,7 @@ export type SendTransactionErrorType =
  * Creates, signs, and sends a new transaction to the network.
  *
  * - Docs: https://viem.sh/docs/actions/wallet/sendTransaction.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/transactions/sending-transactions
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/transactions/sending-transactions
  * - JSON-RPC Methods:
  *   - JSON-RPC Accounts: [`eth_sendTransaction`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction)
  *   - Local Accounts: [`eth_sendRawTransaction`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction)
@@ -123,7 +124,7 @@ export type SendTransactionErrorType =
 export async function sendTransaction<
   TChain extends Chain | undefined,
   TAccount extends Account | undefined,
-  TChainOverride extends Chain | undefined,
+  TChainOverride extends Chain | undefined = undefined,
 >(
   client: Client<Transport, TChain, TAccount>,
   args: SendTransactionParameters<TChain, TAccount, TChainOverride>,
@@ -154,7 +155,7 @@ export async function sendTransaction<
 
     let chainId
     if (chain !== null) {
-      chainId = await getChainId(client)
+      chainId = await getAction(client, getChainId, 'getChainId')({})
       assertCurrentChain({
         currentChainId: chainId,
         chain,
@@ -163,7 +164,11 @@ export async function sendTransaction<
 
     if (account.type === 'local') {
       // Prepare the request for signing (assign appropriate fees, etc.)
-      const request = await prepareTransactionRequest(client, {
+      const request = await getAction(
+        client,
+        prepareTransactionRequest,
+        'prepareTransactionRequest',
+      )({
         account,
         accessList,
         chain,
@@ -178,7 +183,8 @@ export async function sendTransaction<
         ...rest,
       } as any)
 
-      if (!chainId) chainId = await getChainId(client)
+      if (!chainId)
+        chainId = await getAction(client, getChainId, 'getChainId')({})
 
       const serializer = chain?.serializers?.transaction
       const serializedTransaction = (await account.signTransaction(
@@ -188,16 +194,21 @@ export async function sendTransaction<
         } as TransactionSerializable,
         { serializer },
       )) as Hash
-      return await sendRawTransaction(client, {
+      return await getAction(
+        client,
+        sendRawTransaction,
+        'sendRawTransaction',
+      )({
         serializedTransaction,
       })
     }
 
-    const format =
-      chain?.formatters?.transactionRequest?.format || formatTransactionRequest
+    const chainFormat = client.chain?.formatters?.transactionRequest?.format
+    const format = chainFormat || formatTransactionRequest
+
     const request = format({
       // Pick out extra data that might exist on the chain's transaction request type.
-      ...extract(rest, { format }),
+      ...extract(rest, { format: chainFormat }),
       accessList,
       data,
       from: account.address,

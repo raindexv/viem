@@ -22,6 +22,7 @@ import {
   type GetContractErrorReturnType,
   getContractError,
 } from '../../utils/errors/getContractError.js'
+import { getAction } from '../../utils/getAction.js'
 
 import { type CallErrorType, type CallParameters, call } from './call.js'
 
@@ -44,7 +45,7 @@ export type ReadContractErrorType = GetContractErrorReturnType<
  * Calls a read-only function on a contract, and returns the response.
  *
  * - Docs: https://viem.sh/docs/contract/readContract.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/contracts/reading-contracts
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/contracts/reading-contracts
  *
  * A "read-only" function (constant function) on a Solidity contract is denoted by a `view` or `pure` keyword. They can only read the state of the contract, and cannot make any changes to it. Since read-only methods do not change the state of the contract, they do not require any gas to be executed, and can be called by any user without the need to pay for gas.
  *
@@ -91,7 +92,11 @@ export async function readContract<
     functionName,
   } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
   try {
-    const { data } = await call(client, {
+    const { data } = await getAction(
+      client,
+      call,
+      'call',
+    )({
       data: calldata,
       to: address,
       ...callRequest,

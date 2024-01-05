@@ -8,12 +8,13 @@ import type { Prettify } from '../../types/utils.js'
 import {
   type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from '../../utils/chain.js'
+} from '../../utils/chain/getChainContractAddress.js'
 import { type ToHexErrorType, toHex } from '../../utils/encoding/toHex.js'
 import {
   type PacketToBytesErrorType,
   packetToBytes,
 } from '../../utils/ens/packetToBytes.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type ReadContractParameters,
   readContract,
@@ -40,7 +41,7 @@ export type GetEnsResolverErrorType =
  * Gets resolver for ENS name.
  *
  * - Docs: https://viem.sh/docs/ens/actions/getEnsResolver.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/ens
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/ens
  *
  * Calls `findResolver(bytes)` on ENS Universal Resolver Contract to retrieve the resolver of an ENS name.
  *
@@ -60,7 +61,7 @@ export type GetEnsResolverErrorType =
  *   transport: http(),
  * })
  * const resolverAddress = await getEnsResolver(client, {
- *   name: normalize('wagmi-dev.eth'),
+ *   name: normalize('wevm.eth'),
  * })
  * // '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41'
  */
@@ -87,7 +88,11 @@ export async function getEnsResolver<TChain extends Chain | undefined>(
     })
   }
 
-  const [resolverAddress] = await readContract(client, {
+  const [resolverAddress] = await getAction(
+    client,
+    readContract,
+    'readContract',
+  )({
     address: universalResolverAddress,
     abi: [
       {

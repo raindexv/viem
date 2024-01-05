@@ -28,6 +28,7 @@ import type {
 } from '../types/utils.js'
 
 import type { ErrorType } from '../errors/utils.js'
+import { getAction } from '../utils/getAction.js'
 import {
   type CreateContractEventFilterParameters,
   type CreateContractEventFilterReturnType,
@@ -155,10 +156,10 @@ export type GetContractReturnType<
              * // 424122n
              */
             read: {
-              [FunctionName in _ReadFunctionNames]: GetReadFunction<
+              [_FunctionName in _ReadFunctionNames]: GetReadFunction<
                 _Narrowable,
                 TAbi,
-                FunctionName
+                _FunctionName
               >
             }
           }) &
@@ -186,12 +187,12 @@ export type GetContractReturnType<
                * })
                */
               estimateGas: {
-                [FunctionName in _WriteFunctionNames]: GetEstimateFunction<
+                [_FunctionName in _WriteFunctionNames]: GetEstimateFunction<
                   _Narrowable,
                   TPublicClient['chain'],
                   undefined,
                   TAbi,
-                  FunctionName
+                  _FunctionName
                 >
               }
               /**
@@ -219,11 +220,11 @@ export type GetContractReturnType<
                * })
                */
               simulate: {
-                [FunctionName in _WriteFunctionNames]: GetSimulateFunction<
+                [_FunctionName in _WriteFunctionNames]: GetSimulateFunction<
                   _Narrowable,
                   TPublicClient['chain'],
                   TAbi,
-                  FunctionName
+                  _FunctionName
                 >
               }
             }) &
@@ -249,10 +250,10 @@ export type GetContractReturnType<
                * const filter = await contract.createEventFilter.Transfer()
                */
               createEventFilter: {
-                [EventName in _EventNames]: GetEventFilter<
+                [_EventName in _EventNames]: GetEventFilter<
                   _Narrowable,
                   TAbi,
-                  EventName
+                  _EventName
                 >
               }
               /**
@@ -274,10 +275,10 @@ export type GetContractReturnType<
                * const filter = await contract.createEventFilter.Transfer()
                */
               getEvents: {
-                [EventName in _EventNames]: GetEventsFunction<
+                [_EventName in _EventNames]: GetEventsFunction<
                   _Narrowable,
                   TAbi,
-                  EventName
+                  _EventName
                 >
               }
               /**
@@ -307,10 +308,10 @@ export type GetContractReturnType<
                * )
                */
               watchEvent: {
-                [EventName in _EventNames]: GetWatchEvent<
+                [_EventName in _EventNames]: GetWatchEvent<
                   _Narrowable,
                   TAbi,
-                  EventName
+                  _EventName
                 >
               }
             })
@@ -340,12 +341,12 @@ export type GetContractReturnType<
              * })
              */
             estimateGas: {
-              [FunctionName in _WriteFunctionNames]: GetEstimateFunction<
+              [_FunctionName in _WriteFunctionNames]: GetEstimateFunction<
                 _Narrowable,
                 TWalletClient['chain'],
                 TWalletClient['account'],
                 TAbi,
-                FunctionName
+                _FunctionName
               >
             }
             /**
@@ -375,12 +376,12 @@ export type GetContractReturnType<
              * })
              */
             write: {
-              [FunctionName in _WriteFunctionNames]: GetWriteFunction<
+              [_FunctionName in _WriteFunctionNames]: GetWriteFunction<
                 _Narrowable,
                 TWalletClient['chain'],
                 TWalletClient['account'],
                 TAbi,
-                FunctionName
+                _FunctionName
               >
             }
           }
@@ -485,7 +486,11 @@ export function getContract<
               ]
             ) => {
               const { args, options } = getFunctionParameters(parameters)
-              return readContract(publicClient, {
+              return getAction(
+                publicClient,
+                readContract,
+                'readContract',
+              )({
                 abi,
                 address,
                 functionName,
@@ -512,7 +517,11 @@ export function getContract<
               ]
             ) => {
               const { args, options } = getFunctionParameters(parameters)
-              return simulateContract(publicClient, {
+              return getAction(
+                publicClient,
+                simulateContract,
+                'simulateContract',
+              )({
                 abi,
                 address,
                 functionName,
@@ -545,7 +554,11 @@ export function getContract<
                 parameters,
                 abiEvent!,
               )
-              return createContractEventFilter(publicClient, {
+              return getAction(
+                publicClient,
+                createContractEventFilter,
+                'createContractEventFilter',
+              )({
                 abi,
                 address,
                 eventName,
@@ -576,7 +589,11 @@ export function getContract<
                 parameters,
                 abiEvent!,
               )
-              return getContractEvents(publicClient, {
+              return getAction(
+                publicClient,
+                getContractEvents,
+                'getContractEvents',
+              )({
                 abi,
                 address,
                 eventName,
@@ -607,7 +624,11 @@ export function getContract<
                 parameters,
                 abiEvent!,
               )
-              return watchContractEvent(publicClient, {
+              return getAction(
+                publicClient,
+                watchContractEvent,
+                'watchContractEvent',
+              )({
                 abi,
                 address,
                 eventName,
@@ -637,7 +658,11 @@ export function getContract<
               ]
             ) => {
               const { args, options } = getFunctionParameters(parameters)
-              return writeContract(walletClient, {
+              return getAction(
+                walletClient,
+                writeContract,
+                'writeContract',
+              )({
                 abi,
                 address,
                 functionName,
@@ -672,7 +697,11 @@ export function getContract<
             ) => {
               const { args, options } = getFunctionParameters(parameters)
               const client = (publicClient ?? walletClient)!
-              return estimateContractGas(client, {
+              return getAction(
+                client,
+                estimateContractGas,
+                'estimateContractGas',
+              )({
                 abi,
                 address,
                 functionName,

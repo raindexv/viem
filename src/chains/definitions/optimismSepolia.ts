@@ -1,4 +1,4 @@
-import { defineChain } from '../../utils/chain.js'
+import { defineChain } from '../../utils/chain/defineChain.js'
 import { formattersOptimism } from '../optimism/formatters.js'
 
 export const optimismSepolia = /*#__PURE__*/ defineChain(
@@ -8,6 +8,10 @@ export const optimismSepolia = /*#__PURE__*/ defineChain(
     network: 'optimism-sepolia',
     nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: {
+      alchemy: {
+        http: ['https://opt-sepolia.g.alchemy.com/v2'],
+        webSocket: ['wss://opt-sepolia.g.alchemy.com/v2'],
+      },
       default: {
         http: ['https://sepolia.optimism.io'],
       },

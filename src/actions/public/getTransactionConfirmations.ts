@@ -4,6 +4,7 @@ import type { ErrorType } from '../../errors/utils.js'
 import type { Chain } from '../../types/chain.js'
 import type { Hash } from '../../types/misc.js'
 import type { FormattedTransactionReceipt } from '../../utils/formatters/transactionReceipt.js'
+import { getAction } from '../../utils/getAction.js'
 
 import {
   type GetBlockNumberErrorType,
@@ -39,7 +40,7 @@ export type GetTransactionConfirmationsErrorType =
  * Returns the number of blocks passed (confirmations) since the transaction was processed on a block.
  *
  * - Docs: https://viem.sh/docs/actions/public/getTransactionConfirmations.html
- * - Example: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/transactions/fetching-transactions
+ * - Example: https://stackblitz.com/github/wevm/viem/tree/main/examples/transactions/fetching-transactions
  * - JSON-RPC Methods: [`eth_getTransactionConfirmations`](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getTransactionConfirmations)
  *
  * @param client - Client to use
@@ -66,8 +67,10 @@ export async function getTransactionConfirmations<
   { hash, transactionReceipt }: GetTransactionConfirmationsParameters<TChain>,
 ): Promise<GetTransactionConfirmationsReturnType> {
   const [blockNumber, transaction] = await Promise.all([
-    getBlockNumber(client),
-    hash ? getTransaction(client, { hash }) : undefined,
+    getAction(client, getBlockNumber, 'getBlockNumber')({}),
+    hash
+      ? getAction(client, getTransaction, 'getBlockNumber')({ hash })
+      : undefined,
   ])
   const transactionBlockNumber =
     transactionReceipt?.blockNumber || transaction?.blockNumber

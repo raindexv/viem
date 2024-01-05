@@ -8,6 +8,7 @@ import {
   type ParseAvatarRecordErrorType,
   parseAvatarRecord,
 } from '../../utils/ens/avatar/parseAvatarRecord.js'
+import { getAction } from '../../utils/getAction.js'
 
 import {
   type GetEnsTextErrorType,
@@ -33,7 +34,7 @@ export type GetEnsAvatarErrorType =
  * Gets the avatar of an ENS name.
  *
  * - Docs: https://viem.sh/docs/ens/actions/getEnsAvatar.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/ens
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/ens
  *
  * Calls [`getEnsText`](https://viem.sh/docs/ens/actions/getEnsText.html) with `key` set to `'avatar'`.
  *
@@ -53,7 +54,7 @@ export type GetEnsAvatarErrorType =
  *   transport: http(),
  * })
  * const ensAvatar = await getEnsAvatar(client, {
- *   name: normalize('wagmi-dev.eth'),
+ *   name: normalize('wevm.eth'),
  * })
  * // 'https://ipfs.io/ipfs/Qma8mnp6xV3J2cRNf3mTth5C8nV11CAnceVinc3y8jSbio'
  */
@@ -67,7 +68,11 @@ export async function getEnsAvatar<TChain extends Chain | undefined>(
     universalResolverAddress,
   }: GetEnsAvatarParameters,
 ): Promise<GetEnsAvatarReturnType> {
-  const record = await getEnsText(client, {
+  const record = await getAction(
+    client,
+    getEnsText,
+    'getEnsText',
+  )({
     blockNumber,
     blockTag,
     key: 'avatar',

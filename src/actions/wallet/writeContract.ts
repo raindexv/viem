@@ -16,6 +16,7 @@ import {
   encodeFunctionData,
 } from '../../utils/abi/encodeFunctionData.js'
 import type { FormattedTransactionRequest } from '../../utils/formatters/transactionRequest.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type SendTransactionErrorType,
   type SendTransactionParameters,
@@ -41,13 +42,9 @@ export type WriteContractParameters<
   GetValue<
     TAbi,
     TFunctionName,
-    SendTransactionParameters<
-      TChain,
-      TAccount,
-      TChainOverride
-    > extends SendTransactionParameters
-      ? SendTransactionParameters<TChain, TAccount, TChainOverride>['value']
-      : SendTransactionParameters['value']
+    FormattedTransactionRequest<
+      TChainOverride extends Chain ? TChainOverride : TChain
+    >['value']
   > & {
     /** Data to append to the end of the calldata. Useful for adding a ["domain" tag](https://opensea.notion.site/opensea/Seaport-Order-Attributions-ec2d69bf455041a5baa490941aad307f). */
     dataSuffix?: Hex
@@ -64,7 +61,7 @@ export type WriteContractErrorType =
  * Executes a write function on a contract.
  *
  * - Docs: https://viem.sh/docs/contract/writeContract.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/contracts/writing-to-contracts
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/contracts/writing-to-contracts
  *
  * A "write" function on a Solidity contract modifies the state of the blockchain. These types of functions require gas to be executed, and hence a [Transaction](https://viem.sh/docs/glossary/terms.html) is needed to be broadcast in order to change the state.
  *
@@ -115,7 +112,7 @@ export async function writeContract<
   TAccount extends Account | undefined,
   const TAbi extends Abi | readonly unknown[],
   TFunctionName extends string,
-  TChainOverride extends Chain | undefined,
+  TChainOverride extends Chain | undefined = undefined,
 >(
   client: Client<Transport, TChain, TAccount>,
   {
@@ -138,7 +135,11 @@ export async function writeContract<
     args,
     functionName,
   } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
-  const hash = await sendTransaction(client, {
+  const hash = await getAction(
+    client,
+    sendTransaction,
+    'sendTransaction',
+  )({
     data: `${data}${dataSuffix ? dataSuffix.replace('0x', '') : ''}`,
     to: address,
     ...request,

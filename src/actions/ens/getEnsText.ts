@@ -19,7 +19,7 @@ import {
 import {
   type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from '../../utils/chain.js'
+} from '../../utils/chain/getChainContractAddress.js'
 import { type ToHexErrorType, toHex } from '../../utils/encoding/toHex.js'
 import { isNullUniversalResolverError } from '../../utils/ens/errors.js'
 import { type NamehashErrorType, namehash } from '../../utils/ens/namehash.js'
@@ -27,6 +27,7 @@ import {
   type PacketToBytesErrorType,
   packetToBytes,
 } from '../../utils/ens/packetToBytes.js'
+import { getAction } from '../../utils/getAction.js'
 import {
   type ReadContractErrorType,
   type ReadContractParameters,
@@ -59,7 +60,7 @@ export type GetEnsTextErrorType =
  * Gets a text record for specified ENS name.
  *
  * - Docs: https://viem.sh/docs/ens/actions/getEnsResolver.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/ens
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/ens
  *
  * Calls `resolve(bytes, bytes)` on ENS Universal Resolver Contract.
  *
@@ -79,7 +80,7 @@ export type GetEnsTextErrorType =
  *   transport: http(),
  * })
  * const twitterRecord = await getEnsText(client, {
- *   name: normalize('wagmi-dev.eth'),
+ *   name: normalize('wevm.eth'),
  *   key: 'com.twitter',
  * })
  * // 'wagmi_sh'
@@ -109,7 +110,11 @@ export async function getEnsText<TChain extends Chain | undefined>(
   }
 
   try {
-    const res = await readContract(client, {
+    const res = await getAction(
+      client,
+      readContract,
+      'readContract',
+    )({
       address: universalResolverAddress,
       abi: universalResolverResolveAbi,
       functionName: 'resolve',

@@ -582,6 +582,8 @@ export {
   minInt248,
   minInt256,
 } from './constants/number.js'
+export { zeroHash } from './constants/bytes.js'
+export { presignMessagePrefix } from './constants/strings.js'
 export {
   AbiConstructorNotFoundError,
   type AbiConstructorNotFoundErrorType,
@@ -1233,11 +1235,19 @@ export {
 export {
   type AssertCurrentChainErrorType,
   type AssertCurrentChainParameters,
-  type GetChainContractAddressErrorType,
   assertCurrentChain,
-  defineChain,
+} from './utils/chain/assertCurrentChain.js'
+export { defineChain } from './utils/chain/defineChain.js'
+export {
+  type ExtractChainErrorType,
+  type ExtractChainParameters,
+  type ExtractChainReturnType,
+  extractChain,
+} from './utils/chain/extractChain.js'
+export {
+  type GetChainContractAddressErrorType,
   getChainContractAddress,
-} from './utils/chain.js'
+} from './utils/chain/getChainContractAddress.js'
 export {
   type EncodePackedErrorType,
   encodePacked,
@@ -1313,6 +1323,8 @@ export { type IsBytesErrorType, isBytes } from './utils/data/isBytes.js'
 export { type IsHashErrorType, isHash } from './utils/hash/isHash.js'
 export { type IsHexErrorType, isHex } from './utils/data/isHex.js'
 export { type Keccak256ErrorType, keccak256 } from './utils/hash/keccak256.js'
+export { type Sha256ErrorType, sha256 } from './utils/hash/sha256.js'
+export { type Ripemd160ErrorType, ripemd160 } from './utils/hash/ripemd160.js'
 export {
   type PadBytesErrorType,
   type PadErrorType,

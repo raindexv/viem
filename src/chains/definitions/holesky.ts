@@ -1,4 +1,4 @@
-import { defineChain } from '../../utils/chain.js'
+import { defineChain } from '../../utils/chain/defineChain.js'
 
 export const holesky = /*#__PURE__*/ defineChain({
   id: 17000,
@@ -10,7 +10,7 @@ export const holesky = /*#__PURE__*/ defineChain({
       http: ['https://ethereum-holesky.publicnode.com'],
     },
     public: {
-      http: ['wss://ethereum-holesky.publicnode.com'],
+      http: ['https://ethereum-holesky.publicnode.com'],
     },
   },
   contracts: {

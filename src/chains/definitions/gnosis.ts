@@ -1,4 +1,4 @@
-import { defineChain } from '../../utils/chain.js'
+import { defineChain } from '../../utils/chain/defineChain.js'
 
 export const gnosis = /*#__PURE__*/ defineChain({
   id: 100,
@@ -10,8 +10,14 @@ export const gnosis = /*#__PURE__*/ defineChain({
     symbol: 'xDAI',
   },
   rpcUrls: {
-    default: { http: ['https://rpc.gnosischain.com'] },
-    public: { http: ['https://rpc.gnosischain.com'] },
+    default: {
+      http: ['https://rpc.gnosischain.com'],
+      webSocket: ['wss://rpc.gnosischain.com/wss'],
+    },
+    public: {
+      http: ['https://rpc.gnosischain.com'],
+      webSocket: ['wss://rpc.gnosischain.com/wss'],
+    },
   },
   blockExplorers: {
     etherscan: {

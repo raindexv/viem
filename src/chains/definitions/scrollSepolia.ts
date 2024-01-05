@@ -1,4 +1,4 @@
-import { defineChain } from '../../utils/chain.js'
+import { defineChain } from '../../utils/chain/defineChain.js'
 
 export const scrollSepolia = /*#__PURE__*/ defineChain({
   id: 534_351,
@@ -8,11 +8,9 @@ export const scrollSepolia = /*#__PURE__*/ defineChain({
   rpcUrls: {
     default: {
       http: ['https://sepolia-rpc.scroll.io'],
-      webSocket: ['wss://sepolia-rpc.scroll.io/ws'],
     },
     public: {
       http: ['https://sepolia-rpc.scroll.io'],
-      webSocket: ['wss://sepolia-rpc.scroll.io/ws'],
     },
   },
   blockExplorers: {

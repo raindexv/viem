@@ -32,6 +32,7 @@ import {
 import type { WriteContractParameters } from '../wallet/writeContract.js'
 
 import type { ErrorType } from '../../errors/utils.js'
+import { getAction } from '../../utils/getAction.js'
 import { type CallErrorType, type CallParameters, call } from './call.js'
 
 export type SimulateContractParameters<
@@ -88,7 +89,7 @@ export type SimulateContractErrorType =
  * Simulates/validates a contract interaction. This is useful for retrieving **return data** and **revert reasons** of contract write functions.
  *
  * - Docs: https://viem.sh/docs/contract/simulateContract.html
- * - Examples: https://stackblitz.com/github/wagmi-dev/viem/tree/main/examples/contracts/writing-to-contracts
+ * - Examples: https://stackblitz.com/github/wevm/viem/tree/main/examples/contracts/writing-to-contracts
  *
  * This function does not require gas to execute and _**does not**_ change the state of the blockchain. It is almost identical to [`readContract`](https://viem.sh/docs/contract/readContract.html), but also supports contract write functions.
  *
@@ -119,7 +120,7 @@ export async function simulateContract<
   TChain extends Chain | undefined,
   const TAbi extends Abi | readonly unknown[],
   TFunctionName extends string,
-  TChainOverride extends Chain | undefined,
+  TChainOverride extends Chain | undefined = undefined,
 >(
   client: Client<Transport, TChain>,
   {
@@ -142,7 +143,11 @@ export async function simulateContract<
     functionName,
   } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
   try {
-    const { data } = await call(client, {
+    const { data } = await getAction(
+      client,
+      call,
+      'call',
+    )({
       batch: false,
       data: `${calldata}${dataSuffix ? dataSuffix.replace('0x', '') : ''}`,
       to: address,
