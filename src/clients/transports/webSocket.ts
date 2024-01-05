@@ -8,6 +8,7 @@ import type { Hash } from '../../types/misc.js'
 import {
   type RpcResponse,
   type Socket,
+  type SocketCallback,
   getSocket,
   rpc,
   subscribeSocket,
@@ -114,51 +115,67 @@ export function webSocket(
           let subscriptionSocket: Socket | undefined = undefined
           let subscriptionId: Hash | undefined = undefined
 
-          // When socket is created (or recreated), send eth_subscribe RPC & listen for further responses
-          const unsubscribeSocket = await subscribeSocket(url_, (socket) => {
-            subscriptionSocket = socket
-            subscriptionId = undefined
+          let unsubscribeSocket: (() => any) | undefined = undefined
 
-            rpc.webSocket(socket, {
-              body: {
-                method: 'eth_subscribe',
-                params,
-              },
-              onResponse(response) {
-                if (response.error) {
-                  onError?.(response.error)
-                  return
-                }
+          // await the first eth_subscribe response
+          await new Promise<any>((resolve, reject) => {
+            const onSocketCreated: SocketCallback = (socket) => {
+              subscriptionSocket = socket
+              subscriptionId = undefined
 
-                if (typeof response.id === 'number') {
-                  subscriptionId = response.result
-
-                  // if consumer unsubscribes before subscription ID is received
-                  // then cleanup immediately
-                  if (!active) {
-                    cleanup().catch((error) => {
-                      onError?.(error)
-                    })
+              rpc.webSocket(socket, {
+                body: {
+                  method: 'eth_subscribe',
+                  params,
+                },
+                onResponse(response) {
+                  if (response.error) {
+                    reject(response.error)
+                    onError?.(response.error)
+                    return
                   }
-                  return
-                }
-                if (response.method !== 'eth_subscription') return
-                onData(response.params)
-              },
-            })
 
-            // on socket closed
-            return () => {
-              if (subscriptionSocket === socket) {
-                subscriptionSocket = undefined
-                subscriptionId = undefined
+                  if (typeof response.id === 'number') {
+                    resolve(response)
+                    subscriptionId = response.result
+
+                    // if consumer unsubscribes before subscription ID is received
+                    // then cleanup immediately
+                    if (!active) {
+                      cleanup().catch((error) => {
+                        onError?.(error)
+                      })
+                    }
+                    return
+                  }
+                  if (response.method !== 'eth_subscription') return
+                  onData(response.params)
+                },
+              })
+
+              // on socket closed
+              return () => {
+                if (subscriptionSocket === socket) {
+                  subscriptionSocket = undefined
+                  subscriptionId = undefined
+                }
               }
             }
+
+            // When socket is created (or recreated), send eth_subscribe RPC & listen for further responses
+            subscribeSocket(url_, onSocketCreated)
+              .then((callback) => {
+                unsubscribeSocket = callback
+              })
+              .catch((error) => {
+                reject(error)
+                onError?.(error)
+              })
           })
 
           // unsubscribe from socket creation & send eth_unsubscribe RPC
           const cleanup = async () => {
-            unsubscribeSocket()
+            unsubscribeSocket?.()
             return new Promise<any>((resolve) => {
               if (subscriptionId === undefined) return
               if (subscriptionSocket === undefined) return
@@ -177,7 +194,6 @@ export function webSocket(
           return {
             unsubscribe() {
               active = false
-
               return cleanup()
             },
           }

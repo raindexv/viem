@@ -162,7 +162,7 @@ export type Socket = WebSocket & {
 
 export type GetSocketErrorType = CreateBatchSchedulerErrorType | ErrorType
 
-type SocketCallback = (socket: Socket) => SocketCloseCallback
+export type SocketCallback = (socket: Socket) => SocketCloseCallback
 type SocketCloseCallback = () => any
 
 export const socketsCache = /*#__PURE__*/ new Map<string, Socket>()
